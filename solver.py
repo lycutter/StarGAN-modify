@@ -8,6 +8,7 @@ import numpy as np
 import os
 import time
 import datetime
+from loss import PerceptualLoss
 
 class Solver(object):
     """Solver for training and testing StarGAN."""
@@ -187,6 +188,11 @@ class Solver(object):
         elif self.dataset == 'RaFD':
             data_loader = self.rafd_loader
 
+
+        # init perceptual_loss:
+        perceptual_loss = PerceptualLoss()
+        perceptual_loss.to(self.device)
+
         # Fetch fixed inputs for debugging.
         data_iter = iter(data_loader)
         x_fixed, c_org = next(data_iter)
@@ -283,7 +289,8 @@ class Solver(object):
 
                 # Target-to-original domain.
                 x_reconst = self.G(x_fake, c_org)
-                g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
+                # g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
+                g_loss_rec = perceptual_loss(x_reconst, x_real)
 
                 # Backward and optimize.
                 g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls
